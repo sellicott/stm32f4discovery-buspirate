@@ -105,16 +105,6 @@ SECTIONS
 	} >ram
 	. = ALIGN(4);
 
-	/* 2K section at the end of flash for storing motor controller settings*/
-	.mc_settings (NOLOAD) :
-	{
-		. = ALIGN(4);
-		FILL(0xFF)
-		*(.mc_settings)
-		*(.mc_settings*)
-		. = ALIGN(4);
-	} >mc_settings =0xFF
-	
   _sidata = LOADADDR(.data);
 
 	.data : {

@@ -27,6 +27,8 @@
 #include "messages_v3.h"
 #elif defined(BUSPIRATEV4)
 #include "messages_v4.h"
+#elif defined(BUSPIRATE_STM32)
+#include "messages_stm32.h"
 #else
 #error "No messages file selected!"
 #endif /* BUSPIRATEV3 || BUSPIRATEV4 */

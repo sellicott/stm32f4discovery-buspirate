@@ -19,8 +19,10 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
 #include "main.h"
 #include "usb_device.h"
+#include "usbd_cdc_if.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -45,6 +47,9 @@
 SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
+volatile extern uint8_t  new_message;
+volatile extern uint16_t message_len;
+extern uint8_t UserBuffer[APP_RX_DATA_SIZE];
 
 /* USER CODE END PV */
 
@@ -93,14 +98,55 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
+  new_message = 0;
+  message_len =0;
+  memset(UserBuffer, '\0', APP_RX_DATA_SIZE);
+
+  uint32_t old_tick = HAL_GetTick();
+  uint32_t tick = old_tick;
+  int16_t ms_cnt_1000 = 0;
+  #define CMD_BUFF_LEN 1024
+  char buffer[CMD_BUFF_LEN];
+  memset(buffer, '\0', CMD_BUFF_LEN);
+  uint16_t buff_pos = 0;
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+    old_tick = tick;
+    tick = HAL_GetTick();
+    int16_t t_diff = (uint16_t) (tick - old_tick); 
+    ms_cnt_1000 += t_diff;
+    if(ms_cnt_1000 > 1000){
+      HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+      ms_cnt_1000 = 0;
+    } 
+    if(new_message && message_len > 0) {
+      HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
+      new_message = 0;
+      memset(buffer, '\0', CMD_BUFF_LEN);
+      memcpy(buffer, UserBuffer, message_len);
 
+      #define BUF 64
+      char msg[64];
+      memset(msg, '\0', BUF);
+      itoa(message_len, msg, 10);
+      strcpy(msg, " :msg len\n\r");
+      CDC_Transmit_FS(msg, strlen(msg));
+      
+
+      if (strlen(buffer) > 0){
+        // CDC_Transmit_FS(buffer, strlen(buffer));
+        HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);
+        buff_pos = 0;
+      }
+    }
+    HAL_Delay(5);
+    /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

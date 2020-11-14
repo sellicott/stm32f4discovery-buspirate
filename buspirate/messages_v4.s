@@ -140,7 +140,7 @@ _BPMSG1053_str:
 	.section .text.BPMSG1054, code
 	.global _BPMSG1054_str
 _BPMSG1054_str:
-	.pasciz "Erasing"
+	.pasciz "EraSing"
 
 	; BPMSG1055
 	.section .text.BPMSG1055, code
@@ -152,7 +152,7 @@ _BPMSG1055_str:
 	.section .text.BPMSG1056, code
 	.global _BPMSG1056_str
 _BPMSG1056_str:
-	.pasciz "Saving to slot "
+	.pasciz "Saving to Blot "
 
 	; BPMSG1057
 	.section .text.BPMSG1057, code

@@ -29,12 +29,13 @@
  */
 #define FCY 16000000UL
 
-#include <libpic30.h>
+//#include <libpic30.h>
+#include <stm32f4xx_hal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <xc.h>
+//#include <xc.h>
 
 #include "configuration.h"
 #include "hardware.h"

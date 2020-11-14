@@ -63,10 +63,6 @@
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-/* Define size for the receive and transmit buffer over CDC */
-/* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  2048
-#define APP_TX_DATA_SIZE  2048
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -90,16 +86,19 @@
   * @brief Private variables.
   * @{
   */
+
+/* USER CODE BEGIN PRIVATE_VARIABLES */
+volatile uint8_t  new_message;
+volatile uint16_t message_len;
+
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
+uint8_t UserBuffer[APP_RX_DATA_SIZE];
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
-
-/* USER CODE BEGIN PRIVATE_VARIABLES */
-
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -254,7 +253,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   *
   *         @note
   *         This function will block any OUT packet reception on USB endpoint
-  *         untill exiting this function. If you exit this function before transfer
+  *         untiill exiting this function. If you exit this function before transfer
   *         is complete on CDC interface (ie. using DMA controller) it will result
   *         in receiving more data while previous ones are still not sent.
   *
@@ -265,9 +264,17 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  uint8_t result = USBD_OK;
+  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+
+  new_message = 1;
+  message_len = *Len;
+  memcpy(UserBuffer, UserRxBufferFS, message_len);
+  // update user buffer here
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  return (USBD_OK);
+  result = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  *Len = (uint16_t) hcdc->RxLength;
+  return result;
   /* USER CODE END 6 */
 }
 

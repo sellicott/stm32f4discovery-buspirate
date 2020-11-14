@@ -1,5 +1,5 @@
 # Put your STM32F4 library code directory here
-BUSPIRATE_DIR=../buspirate
+BUSPIRATE_DIR=./buspirate
 SRC_DIR=Src
 INC_DIR=Inc
 LIB_DIR=lib

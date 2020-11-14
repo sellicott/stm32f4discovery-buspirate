@@ -89,16 +89,16 @@
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 volatile uint8_t  new_message;
-volatile uint16_t message_len;
+volatile uint32_t cdc_RX_len;
 
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
-uint8_t UserBuffer[APP_RX_DATA_SIZE];
-uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
+uint8_t cdc_RX_buffer[APP_RX_DATA_SIZE];
+uint8_t user_RX_buffer[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
-uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
+uint8_t cdc_TX_buffer[APP_TX_DATA_SIZE];
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -157,8 +157,9 @@ static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+  cdc_RX_len = 0;
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, cdc_TX_buffer, 0);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, cdc_RX_buffer);
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -268,12 +269,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
 
   new_message = 1;
-  message_len = *Len;
-  memcpy(UserBuffer, UserRxBufferFS, message_len);
+  cdc_RX_len = *Len;
+  memcpy(user_RX_buffer, Buf, cdc_RX_len);
   // update user buffer here
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, cdc_RX_buffer);
   result = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  *Len = (uint16_t) hcdc->RxLength;
+  *Len = hcdc->RxLength;
   return result;
   /* USER CODE END 6 */
 }
@@ -297,7 +298,8 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   if (hcdc->TxState != 0){
     return USBD_BUSY;
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
+  memmove(cdc_TX_buffer, Buf, Len);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, cdc_TX_buffer, Len);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   /* USER CODE END 7 */
   return result;
@@ -326,6 +328,14 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
   return result;
 }
 
+/* 
+ * Busy wait until CDC transmission is finished
+ */
+void CDC_TransmitWait(void)
+{
+  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  while (hcdc->TxState != 0);
+}
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */

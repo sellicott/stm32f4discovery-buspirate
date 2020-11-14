@@ -37,9 +37,9 @@
 #define APP_RX_DATA_SIZE  2048
 #define APP_TX_DATA_SIZE  2048
 
-extern uint8_t UserBuffer[APP_RX_DATA_SIZE];
+extern uint8_t user_RX_buffer[APP_RX_DATA_SIZE];
 volatile extern uint8_t  new_message;
-volatile extern uint16_t message_len;
+volatile extern uint32_t cdc_RX_len;
 
 /* USER CODE END INCLUDE */
 
@@ -113,7 +113,7 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
   */
 
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
-
+void CDC_TransmitWait(void);
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
 /* USER CODE END EXPORTED_FUNCTIONS */

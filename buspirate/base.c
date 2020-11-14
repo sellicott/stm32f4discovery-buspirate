@@ -24,6 +24,11 @@
 #include "base.h"
 #include "core.h"
 
+#if defined(BUSPIRATE_STM32)
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
+#endif /* BUSPIRATE_STM32 */
+
 /**
  * @brief Prefix string for hexadecimal values in human-readable form.
  */
@@ -35,6 +40,15 @@ static const uint8_t HEX_PREFIX[] = {'0', 'x'};
 static const unsigned char HEX_ASCII_TABLE[] = {'0', '1', '2', '3', '4', '5',
                                                 '6', '7', '8', '9', 'A', 'B',
                                                 'C', 'D', 'E', 'F'};
+
+#if defined(BUSPIRATE_STM32)
+extern volatile uint8_t  new_message;
+extern volatile uint32_t cdc_RX_len;
+extern uint8_t  user_RX_buffer[APP_RX_DATA_SIZE];
+#define  CDC_TX_FLUSH_LEN 32
+uint16_t cdc_TX_len;
+uint8_t  user_TX_buffer[CDC_TX_FLUSH_LEN];
+#endif /* BUSPIRATE_STM32 */
 
 #if defined(BUSPIRATEV4)
 extern BYTE cdc_In_len;
@@ -907,6 +921,81 @@ void user_serial_set_baud_rate(const uint16_t rate __attribute__((unused))) {}
 bool user_serial_transmit_done(void) { return YES; }
 
 #endif /* BUSPIRATEV4 */
+
+#if defined(BUSPIRATE_STM32)
+
+/* 
+ * write a character to the transmit buffer. If the buffer is full, flush it.
+ */
+void putc_cdc(const char c)
+{
+  user_TX_buffer[cdc_TX_len++] = c;
+  if (cdc_TX_len >= CDC_TX_FLUSH_LEN){
+    // will clear the cdc_TX_len variable when writing the stream
+    user_serial_ringbuffer_flush();
+  }
+}
+
+uint8_t getc_cdc(void)
+{
+  if(cdc_RX_len > 0){
+    uint8t_t* c = user_RX_buffer;
+    int len = 0;
+    while(!*c && len++ < APP_RX_DATA_SIZE){ c++ }
+    cdc_RX_len--;
+    return *c;
+  }
+  else {
+    return (uint8_t) EOF;
+  }
+
+}
+
+void user_serial_transmit_character(const char character) {
+  if (bus_pirate_configuration.quiet) {
+    return;
+  }
+  putc_cdc(character);
+}
+
+void user_serial_ringbuffer_append(const char character) {
+  user_serial_transmit_character(character);
+}
+
+bool user_serial_ready_to_read(void) { return cdc_Out_len }
+
+uint8_t user_serial_read_byte(void) { return getc_cdc(); }
+
+/* 
+ * Write the user transmit buffer to the USB host, resets the buffer size
+ * variable.
+ */
+void user_serial_ringbuffer_flush(void) 
+{
+  CDC_Transmit_FS(user_TX_buffer, cdc_TX_len);
+  cdc_TX_len = 0;
+}
+
+void user_serial_ringbuffer_setup(void) {}
+
+void user_serial_ringbuffer_process(void) {}
+
+void user_serial_initialise(void) {}
+
+void user_serial_wait_transmission_done(void)
+{
+  CDC_TransmitWait();
+}
+
+bool user_serial_check_overflow(void) { return NO; }
+
+void user_serial_clear_overflow(void) {}
+
+void user_serial_set_baud_rate(const uint16_t rate __attribute__((unused))) {}
+
+bool user_serial_transmit_done(void) { return YES; }
+
+#endif /* BUSPIRATE_STM32 */
 
 uint16_t user_serial_read_big_endian_word(void) {
   uint16_t value = ((uint16_t)user_serial_read_byte()) << 8;

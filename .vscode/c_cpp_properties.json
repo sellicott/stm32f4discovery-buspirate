@@ -9,12 +9,14 @@
               "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc",
               "${workspaceFolder}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc",
               "${workspaceFolder}/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
-              "${workspaceFolder}/Inc"
+              "${workspaceFolder}/Inc",
+              "${workspaceFolder}/buspirate"
             ],
             "defines": [
               // User Definitions
               "STM32F407xx",
               "USE_HAL_DRIVER",
+              "BUSPIRATE_STM32",
               // GCC Defined Types
               "__STATIC_INLINE=static inline",
               "__DBL_MIN_EXP__=(-1021)",

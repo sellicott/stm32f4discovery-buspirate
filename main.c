@@ -20,136 +20,95 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
+#include <stdlib.h>
 #include "main.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+// Imports for buspirate
+#include "base.h"
+#include "basic.h"
+#include "core.h"
+#define  BUSPIRATE_STM32
+#undef   BUSPIRATEV3
+#undef   BUSPIRATEV4
 
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
+/**
+ * Internal terminal buffer area.
+ */
+static uint8_t bp_buffer[BP_TERMINAL_BUFFER_SIZE]
+    __attribute__((section(".bss.end")));
+
+/**
+ * Global configuration data holder.
+ */
+bus_pirate_configuration_t bus_pirate_configuration = {.terminal_input = bp_buffer};
+
+/**
+ * Mode-specific configuration data holder.
+ */
+mode_configuration_t mode_configuration;
+
+/**
+ * The last command being input by the user.
+ */
+command_t last_command;
+
+// firmware signature variable
+#define FIRMWARE_SIGNATURE 0x31415926
+static uint32_t firmware_signature;
+
 SPI_HandleTypeDef hspi2;
-
-/* USER CODE BEGIN PV */
-volatile extern uint8_t  new_message;
-volatile extern uint16_t message_len;
-extern uint8_t UserBuffer[APP_RX_DATA_SIZE];
-
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI2_Init(void);
-/* USER CODE BEGIN PFP */
 
-/* USER CODE END PFP */
+static void board_initilization(void);
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+  firmware_signature = FIRMWARE_SIGNATURE;
+  board_initilization();
 
-  /* USER CODE END 1 */
+  /* Starts processing user requests. */
+  serviceuser();
 
-  /* MCU Configuration--------------------------------------------------------*/
+  return 0;
+}
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+static void board_initilization(void)
+{
+  //basic board initilization
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI2_Init();
   MX_USB_DEVICE_Init();
-  /* USER CODE BEGIN 2 */
 
-  new_message = 0;
-  message_len =0;
-  memset(UserBuffer, '\0', APP_RX_DATA_SIZE);
+  // buspirate configuration
 
-  uint32_t old_tick = HAL_GetTick();
-  uint32_t tick = old_tick;
-  int16_t ms_cnt_1000 = 0;
-  #define CMD_BUFF_LEN 1024
-  char buffer[CMD_BUFF_LEN];
-  memset(buffer, '\0', CMD_BUFF_LEN);
-  uint16_t buff_pos = 0;
+  /* Set the UART port speed to 115200 bps. */
+  bus_pirate_configuration.terminal_speed = 8;
 
+  /* Default to print numbers in hexadecimal format. */
+  bus_pirate_configuration.display_mode = HEX;
 
-  /* USER CODE END 2 */
+  /* Start from a known, clear state. */
+  bp_reset_board_state();
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    old_tick = tick;
-    tick = HAL_GetTick();
-    int16_t t_diff = (uint16_t) (tick - old_tick); 
-    ms_cnt_1000 += t_diff;
-    if(ms_cnt_1000 > 1000){
-      HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
-      ms_cnt_1000 = 0;
-    } 
-    if(new_message && message_len > 0) {
-      HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
-      new_message = 0;
-      memset(buffer, '\0', CMD_BUFF_LEN);
-      memcpy(buffer, UserBuffer, message_len);
+  bus_pirate_configuration.device_type =
+      bp_read_from_flash(DEV_ADDR_UPPER, DEV_ADDR_TYPE);
+  bus_pirate_configuration.device_revision =
+      bp_read_from_flash(DEV_ADDR_UPPER, DEV_ADDR_REV);
 
-      #define BUF 64
-      char msg[64];
-      memset(msg, '\0', BUF);
-      itoa(message_len, msg, 10);
-      strcpy(msg, " :msg len\n\r");
-      CDC_Transmit_FS(msg, strlen(msg));
-      
+  bus_pirate_configuration.hardware_version = 0;
 
-      if (strlen(buffer) > 0){
-        // CDC_Transmit_FS(buffer, strlen(buffer));
-        HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);
-        buff_pos = 0;
-      }
-    }
-    HAL_Delay(5);
-    /* USER CODE END WHILE */
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+  bus_pirate_configuration.quiet = OFF;
+  mode_configuration.numbits = 8;
+
 }
 
 /**

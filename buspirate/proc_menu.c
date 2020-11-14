@@ -20,14 +20,14 @@
 
 #include "configuration.h"
 
-#include "aux_pin.h"
+//#include "aux_pin.h"
 #include "base.h"
 #include "basic.h"
-#include "binary_io.h"
+//#include "binary_io.h"
 #include "core.h"
 #include "proc_menu.h" //need our public versionInfo() function
 #include "selftest.h"
-#include "sump.h"
+//#include "sump.h"
 
 /**
  * ASCII scancode for the NUL character.
@@ -480,7 +480,7 @@ void serviceuser(void) {
       case 'f':
         bp_frequency_counter_setup();
         break;
-
+/*
       case 'g':
         if (bus_pirate_configuration.bus_mode == BP_HIZ) {
           BPMSG1088;
@@ -498,6 +498,7 @@ void serviceuser(void) {
         mode_configuration.alternate_aux = 1;
         BPMSG1087;
         break;
+*/
 
 #ifdef BUSPIRATEV4
       case 'k':
@@ -510,7 +511,7 @@ void serviceuser(void) {
         BPMSG1264;
         break;
 #endif /* BUSPIRATEV4 */
-
+/*
       case 'L':
         mode_configuration.little_endian = YES;
         BPMSG1124;
@@ -550,13 +551,13 @@ void serviceuser(void) {
 
           bp_enable_adc();
           if (bp_read_adc(BP_ADC_VPU) < 0x50) {
-            /* No voltage on pullup pin detected. */
+            // No voltage on pullup pin detected. 
             MSG_NO_VOLTAGE_ON_PULLUP_PIN;
           }
           bp_disable_adc();
         }
         break;
-
+*/
 #ifdef BUSPIRATEV4
       case 'e':
         set_pullup_voltage();
@@ -570,7 +571,7 @@ void serviceuser(void) {
       case '|':
         convert_value(YES);
         break;
-
+/*
       case '~':
         if (bus_pirate_configuration.bus_mode == BP_HIZ) {
           perform_selftest(true, true);
@@ -578,7 +579,7 @@ void serviceuser(void) {
           BPMSG1092;
         }
         break;
-
+*/
       case '#':
 #ifdef BUSPIRATEV4
         MSG_RESET_MESSAGE;
